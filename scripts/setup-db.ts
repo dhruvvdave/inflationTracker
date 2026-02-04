@@ -1,8 +1,12 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env tsx
 
+import { config } from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
+
+// Load .env file before anything else
+config();
 
 const prisma = new PrismaClient();
 
