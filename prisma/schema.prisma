@@ -1,0 +1,37 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Basket {
+  id        String       @id @default(cuid())
+  name      String
+  createdAt DateTime     @default(now())
+  items     BasketItem[]
+}
+
+model BasketItem {
+  id       String @id @default(cuid())
+  basketId String
+  category String
+  weight   Float
+  seriesId String
+  basket   Basket @relation(fields: [basketId], references: [id], onDelete: Cascade)
+}
+
+model CpiSeriesPoint {
+  id        String   @id @default(cuid())
+  seriesId  String
+  date      DateTime
+  value     Float
+  createdAt DateTime @default(now())
+
+  @@unique([seriesId, date])
+}
