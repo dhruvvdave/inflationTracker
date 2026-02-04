@@ -22,6 +22,13 @@ export default function BasketEditor({ onSaved }: BasketEditorProps) {
   const [error, setError] = useState('');
 
   const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
+  const weightDelta = 1 - totalWeight;
+  const isWeightValid = Math.abs(weightDelta) <= WEIGHT_TOLERANCE;
+  const weightStatus = isWeightValid
+    ? 'Weights total 1.0'
+    : weightDelta > 0
+      ? `Add ${weightDelta.toFixed(4)}`
+      : `Remove ${Math.abs(weightDelta).toFixed(4)}`;
 
   const addItem = () => {
     setItems([...items, { category: '', weight: 0, seriesId: '' }]);
@@ -42,12 +49,21 @@ export default function BasketEditor({ onSaved }: BasketEditorProps) {
     setSaving(true);
 
     try {
+      const payload = {
+        name: name.trim(),
+        items: items.map((item) => ({
+          category: item.category.trim(),
+          weight: item.weight,
+          seriesId: item.seriesId.trim().toUpperCase(),
+        })),
+      };
+
       const response = await fetch('/api/basket', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, items }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -69,7 +85,7 @@ export default function BasketEditor({ onSaved }: BasketEditorProps) {
     }
   };
 
-  const canSave = name.trim() !== '' && Math.abs(totalWeight - 1.0) < WEIGHT_TOLERANCE;
+  const canSave = name.trim() !== '' && isWeightValid;
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
@@ -94,9 +110,12 @@ export default function BasketEditor({ onSaved }: BasketEditorProps) {
 
       <div className="mb-4">
         <div className="flex justify-between items-center mb-2">
-          <label className="block text-slate-300">
-            Items (Weight sum: {totalWeight.toFixed(4)})
-          </label>
+          <div>
+            <label className="block text-slate-300">Items</label>
+            <p className={`text-sm ${isWeightValid ? 'text-emerald-400' : 'text-amber-300'}`}>
+              Weight sum: {totalWeight.toFixed(4)} ({weightStatus})
+            </p>
+          </div>
           <button
             onClick={addItem}
             className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded text-sm"

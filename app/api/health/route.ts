@@ -1,8 +1,20 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { isDatabaseConfigured, prisma } from '@/lib/db';
 
 export async function GET() {
   try {
+    if (!isDatabaseConfigured || !prisma) {
+      return NextResponse.json(
+        {
+          status: 'error',
+          database: 'missing',
+          error: 'DATABASE_URL is not configured',
+          timestamp: new Date().toISOString(),
+        },
+        { status: 503 }
+      );
+    }
+
     // Test database connection
     await prisma.$connect();
     
