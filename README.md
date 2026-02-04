@@ -18,62 +18,152 @@ A full-stack web application that allows users to track their personal inflation
 - **External API**: FRED (Federal Reserve Economic Data)
 - **Testing**: Jest
 
-## Getting Started
+## Quick Start
 
-### Prerequisites
+### 1. Clone and Install
 
-- Node.js 18+ and npm
-- PostgreSQL database
-- FRED API key (free from https://fred.stlouisfed.org/docs/api/api_key.html)
+```bash
+git clone https://github.com/dhruvvdave/inflationTracker.git
+cd inflationTracker
+npm install
+```
 
-### Installation
+### 2. Setup Database (Choose One Option)
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/inflationTracker.git
-   cd inflationTracker
-   ```
+#### Option A: Docker (Easiest, Recommended for Beginners)
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+```bash
+# Start PostgreSQL in Docker
+docker-compose up -d
 
-3. **Set up environment variables**
+# Create .env file with database connection
+echo 'DATABASE_URL="postgresql://postgres:postgres@localhost:5432/inflationlens"' > .env
+echo 'FRED_API_KEY="YOUR_FRED_KEY"' >> .env
+echo 'NEXT_PUBLIC_BASE_URL="http://localhost:3000"' >> .env
+```
+
+**Verify it's running:**
+```bash
+docker-compose ps
+```
+
+#### Option B: Supabase (Free Cloud Database)
+
+1. Sign up at [supabase.com](https://supabase.com)
+2. Create a new project
+3. Go to **Settings** → **Database**
+4. Copy the **Connection String** (use **Transaction** pooling mode, not Session)
+5. Create `.env` file:
    ```bash
    cp .env.example .env
    ```
-   
-   Edit `.env` and add your configuration:
-   - `DATABASE_URL`: Your PostgreSQL connection string
-   - `FRED_API_KEY`: Your FRED API key
-   - `NEXT_PUBLIC_BASE_URL`: Your application URL (http://localhost:3000 for local development)
-
-4. **Set up the database**
-   ```bash
-   npx prisma migrate dev
-   npx prisma generate
+6. Paste your Supabase connection string into `.env`:
+   ```
+   DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@[HOST]:[PORT]/postgres?sslmode=require"
    ```
 
-5. **Fetch CPI data**
-   ```bash
-   npm run refresh:cpi
-   ```
-   
-   This will fetch the latest CPI data from FRED for multiple series including:
-   - CPIAUCSL (All items)
-   - CPIUFDSL (Food)
-   - CPIENGSL (Energy)
-   - CPIMEDSL (Medical care)
-   - CPITRNSL (Transportation)
-   - CPIHOSSL (Housing)
+#### Option C: Local PostgreSQL
 
-6. **Run the development server**
-   ```bash
-   npm run dev
+**macOS:**
+```bash
+# Install PostgreSQL
+brew install postgresql@15
+brew services start postgresql@15
+
+# Create database
+createdb inflationlens
+
+# Create .env file
+echo 'DATABASE_URL="postgresql://postgres@localhost:5432/inflationlens"' > .env
+echo 'FRED_API_KEY="YOUR_FRED_KEY"' >> .env
+echo 'NEXT_PUBLIC_BASE_URL="http://localhost:3000"' >> .env
+```
+
+**Linux (Ubuntu/Debian):**
+```bash
+# Install PostgreSQL
+sudo apt update
+sudo apt install postgresql postgresql-contrib
+
+# Start service
+sudo systemctl start postgresql
+
+# Create database
+sudo -u postgres createdb inflationlens
+
+# Create .env file
+echo 'DATABASE_URL="postgresql://postgres@localhost:5432/inflationlens"' > .env
+echo 'FRED_API_KEY="YOUR_FRED_KEY"' >> .env
+echo 'NEXT_PUBLIC_BASE_URL="http://localhost:3000"' >> .env
+```
+
+**If you encounter permission errors:**
+```bash
+psql inflationlens
+GRANT ALL PRIVILEGES ON DATABASE inflationlens TO postgres;
+GRANT ALL ON SCHEMA public TO postgres;
+\q
+```
+
+### 3. Setup Database Schema
+
+```bash
+# Generate Prisma Client
+npx prisma generate
+
+# Run database migrations
+npx prisma migrate dev
+
+# Verify connection
+npm run setup:db
+```
+
+### 4. Get FRED API Key
+
+1. Visit [https://fred.stlouisfed.org/docs/api/api_key.html](https://fred.stlouisfed.org/docs/api/api_key.html)
+2. Request a free API key (instant approval)
+3. Add it to your `.env` file:
    ```
-   
-   Open [http://localhost:3000](http://localhost:3000) in your browser.
+   FRED_API_KEY="your_actual_api_key_here"
+   ```
+
+### 5. Fetch CPI Data
+
+```bash
+npm run refresh:cpi
+```
+
+This will fetch historical CPI data for various categories (Food, Energy, Medical, Transportation, Housing).
+
+### 6. Start Development Server
+
+```bash
+npm run dev
+```
+
+Visit [http://localhost:3000](http://localhost:3000) in your browser.
+
+### 7. Verify Everything Works
+
+Test the database connection:
+```bash
+curl http://localhost:3000/api/health
+```
+
+Expected response:
+```json
+{"status":"ok","database":"connected","timestamp":"..."}
+```
+
+## Troubleshooting
+
+If you encounter any issues during setup, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for common problems and solutions.
+
+Common issues:
+- Database connection errors → Run `npm run setup:db` for diagnostics
+- Permission denied errors → See database permission fixes in TROUBLESHOOTING.md
+- Port conflicts → Check if port 5432 or 3000 is already in use
+- Missing environment variables → Ensure `.env` file exists with all required values
 
 ### Running Tests
 
@@ -150,6 +240,9 @@ inflationTracker/
 - `npm test` - Run tests
 - `npm run lint` - Lint code
 - `npm run refresh:cpi` - Refresh CPI data from FRED
+- `npm run setup:db` - Check database connection and setup
+- `npm run db:reset` - Reset database (⚠️ deletes all data)
+- `npm run db:studio` - Open Prisma Studio (database GUI)
 
 ## Resume Entry
 
