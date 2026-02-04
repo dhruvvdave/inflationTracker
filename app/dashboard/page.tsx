@@ -5,11 +5,11 @@ import Link from 'next/link';
 export const dynamic = 'force-dynamic';
 
 interface DashboardPageProps {
-  searchParams: { basketId?: string };
+  searchParams: Promise<{ basketId?: string }>;
 }
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
-  const { basketId } = searchParams;
+  const { basketId } = await searchParams;
 
   if (!basketId) {
     return (
