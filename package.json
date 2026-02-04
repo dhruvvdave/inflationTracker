@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "next lint",
     "test": "jest",
-    "refresh:cpi": "ts-node --project tsconfig.json scripts/refreshCpi.ts"
+    "refresh:cpi": "ts-node --project tsconfig.json scripts/refreshCpi.ts",
+    "setup:db": "ts-node --project tsconfig.json scripts/setup-db.ts",
+    "db:reset": "npx prisma migrate reset --force",
+    "db:studio": "npx prisma studio"
   },
   "dependencies": {
     "@prisma/client": "^5.7.1",
