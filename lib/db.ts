@@ -4,27 +4,31 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-// Check if DATABASE_URL is set
-if (!process.env.DATABASE_URL) {
+export const isDatabaseConfigured = Boolean(process.env.DATABASE_URL);
+
+if (!isDatabaseConfigured) {
   console.error('❌ DATABASE_URL is not set in environment variables!');
   console.error('\n📝 Quick Setup:');
   console.error('   1. Copy .env.example to .env');
   console.error('   2. Add your DATABASE_URL to .env');
   console.error('   3. Run: npm run setup:db\n');
   console.error('💡 See README.md for detailed setup instructions');
-  throw new Error('DATABASE_URL is required');
 }
 
 export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    log: ['query'],
-  });
+  isDatabaseConfigured
+    ? globalForPrisma.prisma ??
+      new PrismaClient({
+        log: ['query'],
+      })
+    : null;
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+if (prisma && process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
+}
 
 // Verify connection on startup in development
-if (process.env.NODE_ENV !== 'production') {
+if (prisma && process.env.NODE_ENV !== 'production') {
   prisma.$connect()
     .then(() => {
       console.log('✅ Database connected successfully');

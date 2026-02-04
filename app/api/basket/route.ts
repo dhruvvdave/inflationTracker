@@ -1,9 +1,16 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { validateBasket, BasketInput } from '@/lib/validation';
+import { isDatabaseConfigured, prisma } from '@/lib/db';
+import { validateBasket } from '@/lib/validation';
 
 export async function GET() {
   try {
+    if (!isDatabaseConfigured || !prisma) {
+      return NextResponse.json(
+        { error: 'DATABASE_URL is not configured. Please set up the database.' },
+        { status: 503 }
+      );
+    }
+
     const baskets = await prisma.basket.findMany({
       include: {
         items: true,
@@ -21,10 +28,16 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    if (!isDatabaseConfigured || !prisma) {
+      return NextResponse.json(
+        { error: 'DATABASE_URL is not configured. Please set up the database.' },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     
-    validateBasket(body);
-    const input = body as BasketInput;
+    const input = validateBasket(body);
 
     const basket = await prisma.basket.create({
       data: {

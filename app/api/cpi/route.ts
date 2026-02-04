@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { isDatabaseConfigured, prisma } from '@/lib/db';
 
 export async function GET(request: Request) {
   try {
+    if (!isDatabaseConfigured || !prisma) {
+      return NextResponse.json(
+        { error: 'DATABASE_URL is not configured. Please set up the database.' },
+        { status: 503 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const seriesId = searchParams.get('seriesId');
 

@@ -46,6 +46,7 @@ export function alignSeries(seriesMap: Map<string, WeightedPoint[]>): Map<string
 
     const values: number[] = [];
     let lastValue: number | null = null;
+    const firstKnownValue = points.length > 0 ? points[0].value : 0;
 
     for (const date of sortedDates) {
       const dateStr = date.toISOString().split('T')[0];
@@ -55,7 +56,7 @@ export function alignSeries(seriesMap: Map<string, WeightedPoint[]>): Map<string
       } else {
         // Forward fill with last known value
         // If no previous value exists, this is handled by having initial data
-        values.push(lastValue ?? 0);
+        values.push(lastValue ?? firstKnownValue);
       }
     }
 
@@ -104,20 +105,23 @@ export function computeCategoryContributions(
   const currentIdx = firstSeries.dates.length - 1;
   const pastIdx = currentIdx - monthsBack;
 
-  const contributions: { category: string; contribution: number }[] = [];
+  const totals = new Map<string, number>();
 
   for (const item of items) {
     const series = aligned.get(item.seriesId);
     if (series) {
       const change = pctChange(series.values[currentIdx], series.values[pastIdx]);
       if (change !== null) {
-        contributions.push({
-          category: item.category,
-          contribution: change * item.weight,
-        });
+        totals.set(
+          item.category,
+          (totals.get(item.category) ?? 0) + change * item.weight
+        );
       }
     }
   }
 
-  return contributions.sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution));
+  return Array.from(totals, ([category, contribution]) => ({
+    category,
+    contribution,
+  })).sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution));
 }

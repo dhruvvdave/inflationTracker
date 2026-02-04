@@ -3,6 +3,7 @@ import {
   mom,
   yoy,
   computeWeightedIndex,
+  computeCategoryContributions,
   AlignedSeries,
 } from '../lib/inflation';
 
@@ -74,6 +75,33 @@ describe('Inflation calculations', () => {
       expect(result.dates.length).toBe(2);
       expect(result.values[0]).toBeCloseTo(160, 5); // 100*0.4 + 200*0.6 = 160
       expect(result.values[1]).toBeCloseTo(176, 5); // 110*0.4 + 220*0.6 = 176
+    });
+  });
+
+  describe('computeCategoryContributions', () => {
+    it('should aggregate contributions by category', () => {
+      const aligned = new Map<string, AlignedSeries>();
+      aligned.set('SERIES1', {
+        dates: [new Date('2023-01-01'), new Date('2023-02-01')],
+        values: [100, 110],
+      });
+      aligned.set('SERIES2', {
+        dates: [new Date('2023-01-01'), new Date('2023-02-01')],
+        values: [200, 210],
+      });
+
+      const result = computeCategoryContributions(
+        aligned,
+        [
+          { seriesId: 'SERIES1', weight: 0.5, category: 'Food' },
+          { seriesId: 'SERIES2', weight: 0.5, category: 'Food' },
+        ],
+        1
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0].category).toBe('Food');
+      expect(result[0].contribution).toBeCloseTo(0.075, 5);
     });
   });
 });

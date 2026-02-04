@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { isDatabaseConfigured, prisma } from '@/lib/db';
 import {
   alignSeries,
   computeWeightedIndex,
@@ -11,6 +11,13 @@ import {
 
 export async function GET(request: Request) {
   try {
+    if (!isDatabaseConfigured || !prisma) {
+      return NextResponse.json(
+        { error: 'DATABASE_URL is not configured. Please set up the database.' },
+        { status: 503 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const basketId = searchParams.get('basketId');
 
@@ -28,22 +35,25 @@ export async function GET(request: Request) {
     }
 
     // Fetch CPI data for basket items
-    const seriesIds = basket.items.map((item) => item.seriesId);
-    seriesIds.push('CPIAUCSL'); // Add national CPI
+    const uniqueSeriesIds = Array.from(
+      new Set([...basket.items.map((item) => item.seriesId), 'CPIAUCSL'])
+    );
 
-    const seriesMap = new Map<string, WeightedPoint[]>();
+    const seriesEntries = await Promise.all(
+      uniqueSeriesIds.map(async (seriesId) => {
+        const points = await prisma.cpiSeriesPoint.findMany({
+          where: { seriesId },
+          orderBy: { date: 'asc' },
+        });
 
-    for (const seriesId of seriesIds) {
-      const points = await prisma.cpiSeriesPoint.findMany({
-        where: { seriesId },
-        orderBy: { date: 'asc' },
-      });
+        return [
+          seriesId,
+          points.map((p) => ({ date: p.date, value: p.value })),
+        ] as [string, WeightedPoint[]];
+      })
+    );
 
-      seriesMap.set(
-        seriesId,
-        points.map((p) => ({ date: p.date, value: p.value }))
-      );
-    }
+    const seriesMap = new Map<string, WeightedPoint[]>(seriesEntries);
 
     // Align all series
     const aligned = alignSeries(seriesMap);
