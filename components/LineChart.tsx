@@ -25,7 +25,8 @@ export default function LineChart({ data }: LineChartProps) {
             tick={{ fill: '#94a3b8' }}
             tickFormatter={(value) => {
               const date = new Date(value);
-              return `${date.getMonth() + 1}/${date.getFullYear()}`;
+              const month = (date.getMonth() + 1).toString().padStart(2, '0');
+              return `${month}/${date.getFullYear()}`;
             }}
           />
           <YAxis stroke="#94a3b8" tick={{ fill: '#94a3b8' }} />

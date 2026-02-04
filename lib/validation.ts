@@ -1,3 +1,5 @@
+import { WEIGHT_TOLERANCE } from './constants';
+
 export interface BasketItemInput {
   category: string;
   weight: number;
@@ -32,7 +34,7 @@ export function validateBasket(input: any): input is BasketInput {
     totalWeight += item.weight;
   }
 
-  if (Math.abs(totalWeight - 1.0) > 0.0001) {
+  if (Math.abs(totalWeight - 1.0) > WEIGHT_TOLERANCE) {
     throw new Error(`Weights must sum to 1.0 (got ${totalWeight})`);
   }
 

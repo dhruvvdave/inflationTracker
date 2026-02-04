@@ -53,7 +53,8 @@ export function alignSeries(seriesMap: Map<string, WeightedPoint[]>): Map<string
         lastValue = pointMap.get(dateStr)!;
         values.push(lastValue);
       } else {
-        // Forward fill
+        // Forward fill with last known value
+        // If no previous value exists, this is handled by having initial data
         values.push(lastValue ?? 0);
       }
     }

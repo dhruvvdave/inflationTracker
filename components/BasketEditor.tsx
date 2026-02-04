@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { WEIGHT_TOLERANCE } from '@/lib/constants';
 
 interface BasketItem {
   category: string;
@@ -68,7 +69,7 @@ export default function BasketEditor({ onSaved }: BasketEditorProps) {
     }
   };
 
-  const canSave = name.trim() !== '' && Math.abs(totalWeight - 1.0) < 0.0001;
+  const canSave = name.trim() !== '' && Math.abs(totalWeight - 1.0) < WEIGHT_TOLERANCE;
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
