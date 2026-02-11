@@ -19,6 +19,7 @@ export async function GET() {
         createdAt: 'desc',
       },
     });
+
     return NextResponse.json(baskets);
   } catch (error) {
     console.error('Error fetching baskets:', error);
@@ -36,7 +37,6 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    
     const input = validateBasket(body);
 
     const basket = await prisma.basket.create({
@@ -58,9 +58,31 @@ export async function POST(request: Request) {
     return NextResponse.json(basket, { status: 201 });
   } catch (error: any) {
     console.error('Error creating basket:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create basket' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: error.message || 'Failed to create basket' }, { status: 400 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    if (!isDatabaseConfigured || !prisma) {
+      return NextResponse.json(
+        { error: 'DATABASE_URL is not configured. Please set up the database.' },
+        { status: 503 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const basketId = searchParams.get('id');
+
+    if (!basketId) {
+      return NextResponse.json({ error: 'id is required' }, { status: 400 });
+    }
+
+    await prisma.basket.delete({ where: { id: basketId } });
+
+    return NextResponse.json({ ok: true });
+  } catch (error: any) {
+    console.error('Error deleting basket:', error);
+    return NextResponse.json({ error: error.message || 'Failed to delete basket' }, { status: 400 });
   }
 }
