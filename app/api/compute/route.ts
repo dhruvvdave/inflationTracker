@@ -18,6 +18,7 @@ export async function GET(request: Request) {
       );
     }
 
+    const db = prisma;
     const { searchParams } = new URL(request.url);
     const basketId = searchParams.get('basketId');
 
@@ -25,7 +26,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'basketId is required' }, { status: 400 });
     }
 
-    const basket = await prisma.basket.findUnique({
+    const basket = await db.basket.findUnique({
       where: { id: basketId },
       include: { items: true },
     });
@@ -41,7 +42,7 @@ export async function GET(request: Request) {
 
     const seriesEntries = await Promise.all(
       uniqueSeriesIds.map(async (seriesId) => {
-        const points = await prisma.cpiSeriesPoint.findMany({
+        const points = await db.cpiSeriesPoint.findMany({
           where: { seriesId },
           orderBy: { date: 'asc' },
         });

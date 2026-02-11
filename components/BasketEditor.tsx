@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { WEIGHT_TOLERANCE } from '@/lib/constants';
+import { useRouter } from 'next/navigation';
+import { CPI_SERIES_OPTIONS, WEIGHT_TOLERANCE } from '@/lib/constants';
 
 interface BasketItem {
   category: string;
@@ -13,13 +14,17 @@ interface BasketEditorProps {
   onSaved?: () => void;
 }
 
+const DEFAULT_SERIES = CPI_SERIES_OPTIONS[1]?.value ?? 'CPIUFDSL';
+
 export default function BasketEditor({ onSaved }: BasketEditorProps) {
+  const router = useRouter();
   const [name, setName] = useState('');
   const [items, setItems] = useState<BasketItem[]>([
-    { category: '', weight: 0, seriesId: '' },
+    { category: '', weight: 0, seriesId: DEFAULT_SERIES },
   ]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
   const weightDelta = 1 - totalWeight;
@@ -31,7 +36,7 @@ export default function BasketEditor({ onSaved }: BasketEditorProps) {
       : `Remove ${Math.abs(weightDelta).toFixed(4)}`;
 
   const addItem = () => {
-    setItems([...items, { category: '', weight: 0, seriesId: '' }]);
+    setItems([...items, { category: '', weight: 0, seriesId: DEFAULT_SERIES }]);
   };
 
   const removeItem = (index: number) => {
@@ -46,6 +51,7 @@ export default function BasketEditor({ onSaved }: BasketEditorProps) {
 
   const handleSave = async () => {
     setError('');
+    setSuccessMessage('');
     setSaving(true);
 
     try {
@@ -71,13 +77,18 @@ export default function BasketEditor({ onSaved }: BasketEditorProps) {
         throw new Error(data.error || 'Failed to save basket');
       }
 
-      // Reset form
+      const basket = await response.json();
+
       setName('');
-      setItems([{ category: '', weight: 0, seriesId: '' }]);
-      
+      setItems([{ category: '', weight: 0, seriesId: DEFAULT_SERIES }]);
+      setSuccessMessage('Basket saved. Redirecting to dashboard...');
+
       if (onSaved) {
         onSaved();
       }
+
+      router.push(`/dashboard?basketId=${basket.id}`);
+      router.refresh();
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -85,15 +96,25 @@ export default function BasketEditor({ onSaved }: BasketEditorProps) {
     }
   };
 
-  const canSave = name.trim() !== '' && isWeightValid;
+  const canSave =
+    name.trim() !== '' && isWeightValid && items.every((item) => item.category.trim() && item.seriesId.trim());
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
-      <h2 className="text-2xl font-bold text-slate-50 mb-4">Create New Basket</h2>
+      <h2 className="text-2xl font-bold text-slate-50 mb-2">Create New Basket</h2>
+      <p className="text-sm text-slate-400 mb-4">
+        Tip: Use broad categories and make sure weights sum to exactly 1.0.
+      </p>
 
       {error && (
         <div className="bg-red-900/50 border border-red-700 text-red-200 px-4 py-2 rounded mb-4">
           {error}
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="bg-emerald-900/30 border border-emerald-700 text-emerald-200 px-4 py-2 rounded mb-4">
+          {successMessage}
         </div>
       )}
 
@@ -126,9 +147,9 @@ export default function BasketEditor({ onSaved }: BasketEditorProps) {
 
         <div className="space-y-2">
           <div className="grid grid-cols-12 gap-2 text-slate-400 text-sm">
-            <div className="col-span-4">Category</div>
-            <div className="col-span-3">Weight</div>
-            <div className="col-span-4">Series ID</div>
+            <div className="col-span-3">Category</div>
+            <div className="col-span-2">Weight</div>
+            <div className="col-span-6">Series</div>
             <div className="col-span-1"></div>
           </div>
 
@@ -138,7 +159,7 @@ export default function BasketEditor({ onSaved }: BasketEditorProps) {
                 type="text"
                 value={item.category}
                 onChange={(e) => updateItem(index, 'category', e.target.value)}
-                className="col-span-4 bg-slate-800 border border-slate-700 text-slate-50 rounded px-2 py-1 text-sm"
+                className="col-span-3 bg-slate-800 border border-slate-700 text-slate-50 rounded px-2 py-1 text-sm"
                 placeholder="Food"
               />
               <input
@@ -146,16 +167,20 @@ export default function BasketEditor({ onSaved }: BasketEditorProps) {
                 step="0.01"
                 value={item.weight}
                 onChange={(e) => updateItem(index, 'weight', parseFloat(e.target.value) || 0)}
-                className="col-span-3 bg-slate-800 border border-slate-700 text-slate-50 rounded px-2 py-1 text-sm"
+                className="col-span-2 bg-slate-800 border border-slate-700 text-slate-50 rounded px-2 py-1 text-sm"
                 placeholder="0.30"
               />
-              <input
-                type="text"
+              <select
                 value={item.seriesId}
                 onChange={(e) => updateItem(index, 'seriesId', e.target.value)}
-                className="col-span-4 bg-slate-800 border border-slate-700 text-slate-50 rounded px-2 py-1 text-sm"
-                placeholder="CPIUFDSL"
-              />
+                className="col-span-6 bg-slate-800 border border-slate-700 text-slate-50 rounded px-2 py-1 text-sm"
+              >
+                {CPI_SERIES_OPTIONS.map((series) => (
+                  <option key={series.value} value={series.value}>
+                    {series.label} ({series.value})
+                  </option>
+                ))}
+              </select>
               <button
                 onClick={() => removeItem(index)}
                 className="col-span-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
